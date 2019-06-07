@@ -1,0 +1,98 @@
+﻿@using Kendo.Mvc.UI;
+@model IEnumerable<KendoTesting.ViewModel.ProductViewModel>
+<style>
+    .col-md4 {
+        width: 600px;
+        float: left;
+        text-align: right;
+        direction: rtl;
+     
+    }
+    th.k-header.k-filterable {
+        direction: rtl;
+        text-align: right;
+    }
+</style>
+
+
+
+@(Html.Kendo().Grid(Model).Name("Grid")
+                            .DataSource(ds => ds.Ajax()
+                                            .Model(m =>
+                                            {
+                                                m.Id(p => p.Id);
+                                            })
+                                    .Read(r => r.Action("Read", "Home"))
+                            )
+                            .ToolBar(toolBar =>
+                                toolBar.Custom()
+                                    .Text("خروجی اکسل")
+                                    .HtmlAttributes(new { id = "export" })
+                                    .Url(Url.Action("Export", "Home", new { page = 1, pageSize = "~", filter = "~", sort = "~" }))
+                            )
+                            .Columns(columns =>
+                            {
+                                columns.Bound(p => p.Id).Title("ای دی");
+                                columns.Bound(p => p.imageName).Title("نام محصول");
+
+                                columns.Bound(p => p.GroupId).Title("گروه محصول");
+                                columns.Bound(p => p.RangGroupName).Title("رنج سنی");
+
+                                columns.Bound(p => p.Name).Title("عکس محصول").ClientTemplate("<img src='" + Url.Content("/images/") + "#=Name#' style='width:50px;height:50px' />"  ).Equals(string.Empty);
+
+                            }).Pageable(p=>p.PageSizes(true))
+                    .Events(ev => ev.DataBound("onDataBound")).Resizable(z=>z.Columns(true))
+                    .Groupable()
+                    .Pageable(w=>w.Messages(f=>f.First("اولین").Last("اخرین").Next("بعدی").Previous("قبلی").Refresh("لطفا شکیبا باشد").ItemsPerPage("عناصر").Of("از").Page("تعداد صفحات")))
+                    .Sortable()
+                    .Filterable(o=>o.Operators(u=>u.ForString(s=>s.Clear().Contains("شامل"))).
+                    Operators(p=>p.ForNumber(n=>n.Clear().IsEqualTo("برابراست با").IsGreaterThan("بزرگتراز")
+                    .IsLessThan("کوچکتر از")
+
+                    )).Messages(m=>m.Clear("حذف از فیلتر")).Messages(d=>d.Filter("فیلتر"))
+                    .Messages(h=>h.Info("جستجو"))
+                    .Extra(false)).Groupable(g=>g.Messages(x=>x.Empty("برای گروه بندی بر اساس ستون روی عنوان ستون مورد نظر کلیک کنید")))
+)
+
+<script type="text/javascript">
+    function onDataBound(e) {
+        var grid = $('#Grid').data('kendoGrid');
+
+        // ask the parameterMap to create the request object for you
+        var requestObject = (new kendo.data.transports["aspnetmvc-server"]({ prefix: "" }))
+            .options.parameterMap({
+                page: grid.dataSource.page(),
+                sort: grid.dataSource.sort(),
+                filter: grid.dataSource.filter()
+            });
+
+        // Get the export link as jQuery object
+        var $exportLink = $('#export');
+
+        // Get its 'href' attribute - the URL where it would navigate to
+        var href = $exportLink.attr('href');
+
+        // Update the 'page' parameter with the grid's current page
+        href = href.replace(/page=([^&]*)/, 'page=' + requestObject.page || '~');
+
+        // Update the 'sort' parameter with the grid's current sort descriptor
+        href = href.replace(/sort=([^&]*)/, 'sort=' + requestObject.sort || '~');
+
+        // Update the 'pageSize' parameter with the grid's current pageSize
+        href = href.replace(/pageSize=([^&]*)/, 'pageSize=' + grid.dataSource._pageSize);
+
+        //update filter descriptor with the filters applied
+
+        href = href.replace(/filter=([^&]*)/, 'filter=' + (requestObject.filter || '~'));
+
+        // Update the 'href' attribute
+        $exportLink.attr('href', href);
+    }
+</script>
+<script>
+    $(function () {
+        $('#Grid').addClass('col-md4');
+
+    });
+
+</script>
